@@ -8,6 +8,7 @@ interface User {
     firstName: string;
     lastName: string;
     email?: string;
+    avatarUrl?: string;
     roles: UserRole[];
 }
 
@@ -18,7 +19,9 @@ interface CartItem {
     price: number;
     quantity: number;
     image?: string;
+    pharmacyId?: string;
     requiresPrescription?: boolean;
+    prescriptionUrl?: string;
 }
 
 interface Location {

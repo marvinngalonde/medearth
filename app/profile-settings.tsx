@@ -1,19 +1,27 @@
 import { Button, Card, Input } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
+import { storageService } from '@/services/storageService';
 import { useStore } from '@/store/store';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Bell, CreditCard, Mail, MapPin, Phone, User } from 'lucide-react-native';
+import { ArrowLeft, Bell, Camera, CreditCard, Mail, MapPin, Phone, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileSettingsScreen() {
     const router = useRouter();
     const user = useStore((state) => state.user);
+    const setUser = useStore((state) => state.setUser);
+
+    // Convert avatarUrl to proper prop if it exists
+    const [avatar, setAvatar] = useState<string | null>(user?.avatarUrl || null);
+    const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         phone: user?.phone || '',
-        email: '',
+        email: user?.email || '',
     });
 
     const savedAddresses = [
@@ -25,6 +33,88 @@ export default function ProfileSettingsScreen() {
         { id: '1', type: 'Ecocash', number: '**** 1234', isDefault: true },
         { id: '2', type: 'Visa', number: '**** 5678', isDefault: false },
     ];
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.5,
+            });
+
+            if (!result.canceled) {
+                uploadAvatar(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const uploadAvatar = async (uri: string) => {
+        if (!user) return;
+
+        try {
+            setUploading(true);
+
+            // Create a file object from uri
+            const response = await fetch(uri);
+            const blob = await response.blob();
+
+            // Upload to Supabase
+            const publicUrl = await storageService.uploadAvatar(user.id, blob);
+
+            // Update profile in database
+            const { error } = await supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            // Update local state and store
+            setAvatar(publicUrl);
+            setUser({ ...user, avatarUrl: publicUrl });
+
+            Alert.alert('Success', 'Profile photo updated successfully');
+        } catch (error) {
+            Alert.alert('Error', 'Failed to upload image. Please try again.');
+            console.error(error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        if (!user) return;
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                    phone: formData.phone,
+                    email: formData.email
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            setUser({
+                ...user,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                email: formData.email
+            });
+
+            Alert.alert('Success', 'Profile updated successfully');
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update profile');
+            console.error(error);
+        }
+    };
 
     return (
         <View className="flex-1 bg-gray-50">
@@ -39,6 +129,25 @@ export default function ProfileSettingsScreen() {
             </View>
 
             <ScrollView className="flex-1 px-6 pt-6">
+                {/* Avatar Section */}
+                <View className="items-center mb-6">
+                    <TouchableOpacity onPress={pickImage} disabled={uploading}>
+                        <View className="w-24 h-24 rounded-full bg-white items-center justify-center border-2 border-primary mb-2 overflow-hidden shadow-sm">
+                            {uploading ? (
+                                <ActivityIndicator color="#1E3A8A" />
+                            ) : avatar ? (
+                                <Image source={{ uri: avatar }} className="w-full h-full" />
+                            ) : (
+                                <User size={40} color="#1E3A8A" />
+                            )}
+                        </View>
+                        <View className="absolute bottom-2 right-0 bg-primary w-8 h-8 rounded-full items-center justify-center border-2 border-white">
+                            <Camera size={14} color="white" />
+                        </View>
+                    </TouchableOpacity>
+                    <Text className="text-gray-500 text-sm">Tap to change photo</Text>
+                </View>
+
                 {/* Personal Information */}
                 <Text className="text-lg font-bold text-gray-800 mb-3">Personal Information</Text>
                 <Card className="mb-6">
@@ -72,7 +181,7 @@ export default function ProfileSettingsScreen() {
                         keyboardType="email-address"
                         icon={<Mail size={20} color="#6B7280" />}
                     />
-                    <Button title="Save Changes" onPress={() => { }} />
+                    <Button title="Save Changes" onPress={handleSaveProfile} />
                 </Card>
 
                 {/* Delivery Addresses */}

@@ -1,36 +1,94 @@
 import { Button, Card } from '@/components/ui';
+import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, MapPin, MessageCircle, Phone, Star } from 'lucide-react-native';
-import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+
+interface Doctor {
+    id: string;
+    name: string;
+    specialty: string;
+    image_url: string;
+    rating: number;
+    total_reviews: number;
+    experience_years: number;
+    consultation_fee: number;
+    location: string;
+    bio: string;
+    qualifications: string[];
+    phone: string;
+}
+
+interface DoctorAvailability {
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+}
 
 export default function DoctorProfileScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
+    const [doctor, setDoctor] = useState<Doctor | null>(null);
+    const [availability, setAvailability] = useState<DoctorAvailability[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock doctor data
-    const doctor = {
-        id: id as string,
-        name: 'Dr. Sarafaraz',
-        specialty: 'Cardiology',
-        image: 'https://via.placeholder.com/150',
-        rating: 4.8,
-        reviews: 124,
-        experience: '15 years',
-        fee: 15.00,
-        location: 'Harare Medical Center',
-        about: 'Dr. Sarafaraz is a highly experienced cardiologist specializing in heart disease prevention and treatment. With over 15 years of practice, he has helped thousands of patients maintain healthy hearts.',
-        qualifications: [
-            'MBBS - University of Zimbabwe',
-            'MD Cardiology - University of Cape Town',
-            'Fellowship in Interventional Cardiology',
-        ],
-        availability: [
-            { day: 'Monday', time: '9:00 AM - 5:00 PM' },
-            { day: 'Wednesday', time: '9:00 AM - 5:00 PM' },
-            { day: 'Friday', time: '9:00 AM - 5:00 PM' },
-        ],
+    useEffect(() => {
+        if (id) {
+            fetchDoctorDetails();
+        }
+    }, [id]);
+
+    const fetchDoctorDetails = async () => {
+        try {
+            // Fetch doctor details
+            const { data: doctorData, error: doctorError } = await supabase
+                .from('doctors')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (doctorError) throw doctorError;
+            setDoctor(doctorData);
+
+            // Fetch availability
+            const { data: availabilityData, error: availabilityError } = await supabase
+                .from('doctor_availability')
+                .select('*')
+                .eq('doctor_id', id)
+                .eq('is_active', true);
+
+            if (availabilityError) throw availabilityError;
+            setAvailability(availabilityData || []);
+
+        } catch (error) {
+            console.error('Error fetching doctor details:', error);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const getDayName = (dayOfWeek: number) => {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        return days[dayOfWeek];
+    };
+
+    if (loading) {
+        return (
+            <View className="flex-1 bg-gray-50 items-center justify-center">
+                <ActivityIndicator size="large" color="#1E3A8A" />
+            </View>
+        );
+    }
+
+    if (!doctor) {
+        return (
+            <View className="flex-1 bg-gray-50 items-center justify-center">
+                <Text className="text-gray-500 text-lg">Doctor not found</Text>
+                <Button title="Go Back" onPress={() => router.back()} className="mt-4" />
+            </View>
+        );
+    }
 
     return (
         <View className="flex-1 bg-gray-50">
@@ -42,7 +100,7 @@ export default function DoctorProfileScreen() {
 
                 <View className="flex-row items-center">
                     <Image
-                        source={{ uri: doctor.image }}
+                        source={{ uri: doctor.image_url || 'https://via.placeholder.com/150' }}
                         className="w-24 h-24 rounded-full border-4 border-white"
                     />
                     <View className="flex-1 ml-4">
@@ -51,7 +109,7 @@ export default function DoctorProfileScreen() {
                         <View className="flex-row items-center mt-2">
                             <Star size={16} color="#F59E0B" fill="#F59E0B" />
                             <Text className="text-white ml-1">{doctor.rating}</Text>
-                            <Text className="text-blue-200 ml-1">({doctor.reviews} reviews)</Text>
+                            <Text className="text-blue-200 ml-1">({doctor.total_reviews} reviews)</Text>
                         </View>
                     </View>
                 </View>
@@ -60,13 +118,13 @@ export default function DoctorProfileScreen() {
             <ScrollView className="flex-1 px-6 pt-6">
                 {/* Quick Actions */}
                 <View className="flex-row mb-6">
-                    <TouchableOpacity className="flex-1 mr-2">
+                    <TouchableOpacity className="flex-1 mr-2" onPress={() => console.log('Call doctor')}>
                         <Card className="bg-primary flex-row items-center justify-center py-4">
                             <Phone size={20} color="#FFFFFF" />
                             <Text className="ml-2 text-white font-semibold">Call</Text>
                         </Card>
                     </TouchableOpacity>
-                    <TouchableOpacity className="flex-1 ml-2">
+                    <TouchableOpacity className="flex-1 ml-2" onPress={() => console.log('Message doctor')}>
                         <Card className="bg-secondary flex-row items-center justify-center py-4">
                             <MessageCircle size={20} color="#FFFFFF" />
                             <Text className="ml-2 text-white font-semibold">Message</Text>
@@ -87,11 +145,11 @@ export default function DoctorProfileScreen() {
                     <View className="flex-row justify-between mb-3">
                         <View>
                             <Text className="text-gray-500 text-sm">Experience</Text>
-                            <Text className="text-gray-800 font-bold text-lg">{doctor.experience}</Text>
+                            <Text className="text-gray-800 font-bold text-lg">{doctor.experience_years} years</Text>
                         </View>
                         <View>
                             <Text className="text-gray-500 text-sm">Consultation Fee</Text>
-                            <Text className="text-primary font-bold text-lg">${doctor.fee.toFixed(2)}</Text>
+                            <Text className="text-primary font-bold text-lg">${doctor.consultation_fee?.toFixed(2)}</Text>
                         </View>
                     </View>
                 </Card>
@@ -99,30 +157,38 @@ export default function DoctorProfileScreen() {
                 {/* About */}
                 <Text className="text-xl font-bold text-gray-800 mb-3">About</Text>
                 <Card className="mb-4">
-                    <Text className="text-gray-700 leading-6">{doctor.about}</Text>
+                    <Text className="text-gray-700 leading-6">{doctor.bio || 'No biography available.'}</Text>
                 </Card>
 
                 {/* Qualifications */}
-                <Text className="text-xl font-bold text-gray-800 mb-3">Qualifications</Text>
-                <Card className="mb-4">
-                    {doctor.qualifications.map((qual, index) => (
-                        <View key={index} className="flex-row items-center mb-2">
-                            <View className="w-2 h-2 bg-primary rounded-full mr-3" />
-                            <Text className="text-gray-700 flex-1">{qual}</Text>
-                        </View>
-                    ))}
-                </Card>
+                {doctor.qualifications && doctor.qualifications.length > 0 && (
+                    <>
+                        <Text className="text-xl font-bold text-gray-800 mb-3">Qualifications</Text>
+                        <Card className="mb-4">
+                            {doctor.qualifications.map((qual, index) => (
+                                <View key={index} className="flex-row items-center mb-2">
+                                    <View className="w-2 h-2 bg-primary rounded-full mr-3" />
+                                    <Text className="text-gray-700 flex-1">{qual}</Text>
+                                </View>
+                            ))}
+                        </Card>
+                    </>
+                )}
 
                 {/* Availability */}
-                <Text className="text-xl font-bold text-gray-800 mb-3">Availability</Text>
-                <Card className="mb-6">
-                    {doctor.availability.map((slot, index) => (
-                        <View key={index} className="flex-row justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                            <Text className="text-gray-700 font-medium">{slot.day}</Text>
-                            <Text className="text-gray-600">{slot.time}</Text>
-                        </View>
-                    ))}
-                </Card>
+                {availability.length > 0 && (
+                    <>
+                        <Text className="text-xl font-bold text-gray-800 mb-3">Availability</Text>
+                        <Card className="mb-6">
+                            {availability.map((slot, index) => (
+                                <View key={index} className="flex-row justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                                    <Text className="text-gray-700 font-medium">{getDayName(slot.day_of_week)}</Text>
+                                    <Text className="text-gray-600">{slot.start_time} - {slot.end_time}</Text>
+                                </View>
+                            ))}
+                        </Card>
+                    </>
+                )}
             </ScrollView>
 
             {/* Book Appointment Button */}

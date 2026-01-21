@@ -2,7 +2,7 @@ import { Card } from '@/components/ui';
 import { theme } from '@/constants/theme';
 import { useStore } from '@/store/store';
 import { useRouter } from 'expo-router';
-import { AlertCircle, Heart, MapPin, RefreshCw, Search, Upload } from 'lucide-react-native';
+import { AlertCircle, Bell, Heart, MapPin, RefreshCw, Search, Upload } from 'lucide-react-native';
 import React from 'react';
 import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -42,19 +42,27 @@ export default function HomeScreen() {
             <Text className="text-white text-2xl font-bold">MedLink</Text>
             <Text className="text-blue-200 mt-1">Hello, {user?.firstName || 'Naomi'}</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => router.push('/cart')}
-            className="relative"
-          >
-            <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
-              <Text className="text-white text-lg">🛒</Text>
-            </View>
-            {cart.length > 0 && (
-              <View className="absolute -top-1 -right-1 bg-danger w-5 h-5 rounded-full items-center justify-center">
-                <Text className="text-white text-xs font-bold">{cart.length}</Text>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity
+              onPress={() => router.push('/notifications')}
+              className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+            >
+              <Bell size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/cart')}
+              className="relative"
+            >
+              <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
+                <Text className="text-white text-lg">🛒</Text>
               </View>
-            )}
-          </TouchableOpacity>
+              {cart.length > 0 && (
+                <View className="absolute -top-1 -right-1 bg-danger w-5 h-5 rounded-full items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{cart.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search Bar */}

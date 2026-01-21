@@ -1,148 +1,159 @@
-import { theme } from '@/constants/theme';
+import { Message, messagingService } from '@/services/messagingService';
+import { useStore } from '@/store/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, Send, Video } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-interface Message {
-    id: string;
-    text: string;
-    time: string;
-    isMine: boolean;
-}
+import { ArrowLeft, Send } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ConversationScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
+    const user = useStore((state) => state.user);
+    const scrollViewRef = useRef<ScrollView>(null);
 
-    const [messageText, setMessageText] = useState('');
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
 
-    // Mock conversation data
-    const conversation = {
-        id: id as string,
-        name: 'Highland Family Pharmacy',
-        avatar: 'https://via.placeholder.com/50',
-        online: true,
-    };
+    useEffect(() => {
+        if (id && user) {
+            fetchMessages();
+            markAsRead();
 
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            text: 'Hello! How can I help you today?',
-            time: '10:00 AM',
-            isMine: false,
-        },
-        {
-            id: '2',
-            text: 'Hi, I wanted to check if my prescription is ready',
-            time: '10:05 AM',
-            isMine: true,
-        },
-        {
-            id: '3',
-            text: 'Let me check for you. One moment please.',
-            time: '10:06 AM',
-            isMine: false,
-        },
-        {
-            id: '4',
-            text: 'Your order is ready for pickup! You can collect it anytime today.',
-            time: '10:30 AM',
-            isMine: false,
-        },
-    ]);
+            // Subscribe to real-time messages
+            const channel = messagingService.subscribeToMessages(
+                id as string,
+                (message) => {
+                    setMessages((prev) => [...prev, message]);
+                    scrollToBottom();
+                }
+            );
 
-    const handleSend = () => {
-        if (messageText.trim()) {
-            const newMessage: Message = {
-                id: Date.now().toString(),
-                text: messageText,
-                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                isMine: true,
+            return () => {
+                messagingService.unsubscribeFromMessages(channel);
             };
-            setMessages([...messages, newMessage]);
-            setMessageText('');
+        }
+    }, [id, user]);
+
+    const fetchMessages = async () => {
+        try {
+            const data = await messagingService.getMessages(id as string);
+            setMessages(data || []);
+            setTimeout(scrollToBottom, 100);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
+    const markAsRead = async () => {
+        try {
+            await messagingService.markAsRead(id as string);
+        } catch (error) {
+            console.error('Error marking as read:', error);
+        }
+    };
+
+    const handleSend = async () => {
+        if (!newMessage.trim() || sending) return;
+
+        setSending(true);
+        try {
+            await messagingService.sendMessage(id as string, newMessage.trim());
+            setNewMessage('');
+            scrollToBottom();
+        } catch (error) {
+            console.error('Error sending message:', error);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const scrollToBottom = () => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+    };
+
+    const formatTime = (timestamp: string) => {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    if (loading) {
+        return (
+            <View className="flex-1 bg-gray-50 items-center justify-center">
+                <ActivityIndicator size="large" color="#1E3A8A" />
+            </View>
+        );
+    }
+
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className="flex-1 bg-gray-50"
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
             {/* Header */}
             <View className="bg-primary pt-12 pb-4 px-6">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                            <ArrowLeft size={24} color="#FFFFFF" />
-                        </TouchableOpacity>
-
-                        <View className="relative mr-3">
-                            <Image
-                                source={{ uri: conversation.avatar }}
-                                className="w-10 h-10 rounded-full"
-                            />
-                            {conversation.online && (
-                                <View className="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full border-2 border-primary" />
-                            )}
-                        </View>
-
-                        <View className="flex-1">
-                            <Text className="text-white font-bold text-lg">{conversation.name}</Text>
-                            <Text className="text-blue-200 text-sm">
-                                {conversation.online ? 'Online' : 'Offline'}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View className="flex-row">
-                        <TouchableOpacity className="mr-4">
-                            <Phone size={22} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity>
-                            <Video size={22} color="#FFFFFF" />
-                        </TouchableOpacity>
+                <View className="flex-row items-center">
+                    <TouchableOpacity onPress={() => router.back()} className="mr-4">
+                        <ArrowLeft size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View className="flex-1">
+                        <Text className="text-white text-lg font-bold">Conversation</Text>
                     </View>
                 </View>
             </View>
 
             {/* Messages */}
-            <ScrollView className="flex-1 px-6 pt-4">
-                {messages.map((message) => (
-                    <View
-                        key={message.id}
-                        className={`mb-3 ${message.isMine ? 'items-end' : 'items-start'}`}
-                    >
+            <ScrollView
+                ref={scrollViewRef}
+                className="flex-1 px-6 pt-4"
+                onContentSizeChange={scrollToBottom}
+            >
+                {messages.map((message) => {
+                    const isOwn = message.sender_id === user?.id;
+
+                    return (
                         <View
-                            className={`max-w-[75%] rounded-2xl px-4 py-3 ${message.isMine
-                                    ? 'bg-primary'
-                                    : 'bg-white'
-                                }`}
-                            style={!message.isMine ? theme.shadows.sm : {}}
+                            key={message.id}
+                            className={`mb-3 ${isOwn ? 'items-end' : 'items-start'}`}
                         >
-                            <Text className={message.isMine ? 'text-white' : 'text-gray-800'}>
-                                {message.text}
+                            <View
+                                className={`max-w-[75%] px-4 py-3 rounded-2xl ${isOwn
+                                        ? 'bg-primary rounded-br-none'
+                                        : 'bg-white rounded-bl-none'
+                                    }`}
+                            >
+                                <Text className={isOwn ? 'text-white' : 'text-gray-800'}>
+                                    {message.content}
+                                </Text>
+                            </View>
+                            <Text className="text-gray-500 text-xs mt-1">
+                                {formatTime(message.created_at)}
                             </Text>
                         </View>
-                        <Text className="text-xs text-gray-500 mt-1 px-2">{message.time}</Text>
-                    </View>
-                ))}
+                    );
+                })}
             </ScrollView>
 
             {/* Input */}
             <View className="bg-white border-t border-gray-200 px-6 py-4">
                 <View className="flex-row items-center">
                     <TextInput
-                        value={messageText}
-                        onChangeText={setMessageText}
+                        value={newMessage}
+                        onChangeText={setNewMessage}
                         placeholder="Type a message..."
                         className="flex-1 bg-gray-100 rounded-full px-4 py-3 mr-3"
-                        placeholderTextColor="#9CA3AF"
+                        multiline
+                        maxLength={500}
                     />
                     <TouchableOpacity
                         onPress={handleSend}
-                        className="w-12 h-12 bg-primary rounded-full items-center justify-center"
+                        disabled={!newMessage.trim() || sending}
+                        className={`w-12 h-12 rounded-full items-center justify-center ${newMessage.trim() && !sending ? 'bg-primary' : 'bg-gray-300'
+                            }`}
                     >
                         <Send size={20} color="#FFFFFF" />
                     </TouchableOpacity>
