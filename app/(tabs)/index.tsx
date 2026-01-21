@@ -1,98 +1,122 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Card } from '@/components/ui';
+import { theme } from '@/constants/theme';
+import { useStore } from '@/store/store';
+import { useRouter } from 'expo-router';
+import { AlertCircle, Heart, MapPin, RefreshCw, Search, Upload } from 'lucide-react-native';
+import React from 'react';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
+  const user = useStore((state) => state.user);
+  const cart = useStore((state) => state.cart);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const quickActions = [
+    { icon: Upload, label: 'Upload Script', color: '#3B82F6' },
+    { icon: RefreshCw, label: 'Refill Order', color: '#10B981' },
+    { icon: Heart, label: 'My Health', color: '#EF4444' },
+    { icon: AlertCircle, label: 'Emergency', color: '#F59E0B' },
+  ];
+
+  const dealsNearYou = [
+    {
+      id: '1',
+      name: 'New Med-Link',
+      image: 'https://via.placeholder.com/150',
+      type: 'Pharmacy',
+    },
+    {
+      id: '2',
+      name: 'Delicious Food',
+      image: 'https://via.placeholder.com/150',
+      type: 'Restaurant',
+    },
+  ];
+
+  return (
+    <View className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View className="bg-primary pt-12 pb-6 px-6 rounded-b-3xl">
+        <View className="flex-row justify-between items-center mb-4">
+          <View>
+            <Text className="text-white text-2xl font-bold">MedLink</Text>
+            <Text className="text-blue-200 mt-1">Hello, {user?.firstName || 'Naomi'}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => router.push('/cart')}
+            className="relative"
+          >
+            <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
+              <Text className="text-white text-lg">🛒</Text>
+            </View>
+            {cart.length > 0 && (
+              <View className="absolute -top-1 -right-1 bg-danger w-5 h-5 rounded-full items-center justify-center">
+                <Text className="text-white text-xs font-bold">{cart.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <TouchableOpacity
+          onPress={() => router.push('/search-results?query=' as any)}
+          className="bg-white rounded-full px-4 py-3 flex-row items-center mb-6"
+          style={theme.shadows.sm}
+        >
+          <Search size={20} color="#6B7280" />
+          <Text className="ml-2 text-gray-400">Search for medicines...</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView className="flex-1 px-6 pt-6">
+        {/* Quick Actions */}
+        <View className="mb-6">
+          <View className="flex-row flex-wrap justify-between">
+            {quickActions.map((action, index) => (
+              <TouchableOpacity
+                key={index}
+                className="w-[48%] mb-4"
+              >
+                <Card className="items-center py-6">
+                  <View
+                    className="w-12 h-12 rounded-full items-center justify-center mb-2"
+                    style={{ backgroundColor: `${action.color}20` }}
+                  >
+                    <action.icon size={24} color={action.color} />
+                  </View>
+                  <Text className="text-gray-700 font-medium text-center">
+                    {action.label}
+                  </Text>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Deals Near You */}
+        <View className="mb-6">
+          <Text className="text-xl font-bold text-gray-800 mb-4">Deals Near You</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {dealsNearYou.map((deal) => (
+              <TouchableOpacity key={deal.id} className="mr-4">
+                <Card className="w-64">
+                  <Image
+                    source={{ uri: deal.image }}
+                    className="w-full h-32 rounded-lg mb-2"
+                  />
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text className="font-semibold text-gray-800">{deal.name}</Text>
+                      <Text className="text-gray-500 text-sm">{deal.type}</Text>
+                    </View>
+                    <MapPin size={16} color="#6B7280" />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
