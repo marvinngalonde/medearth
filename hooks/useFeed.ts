@@ -34,7 +34,7 @@ export function useFeed() {
                 .from('posts')
                 .select(`
           *,
-          profiles (
+          profiles!posts_author_id_fkey (
             first_name,
             last_name,
             avatar_url

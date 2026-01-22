@@ -1,9 +1,9 @@
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { theme } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { usePharmacies } from '@/hooks/usePharmacies';
 import { useRouter } from 'expo-router';
 import { Clock, MapPin, Star } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
 interface Pharmacy {
@@ -20,65 +20,12 @@ interface Pharmacy {
 export default function PharmaciesScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { pharmacies, loading, refresh } = usePharmacies();
 
-    useEffect(() => {
-        fetchPharmacies();
-    }, []);
-
-    const fetchPharmacies = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('pharmacies') // You might need to create this table or view if not exists, otherwise use profiles with role='pharmacy'
-                .select('*');
-
-            // For now, if table doesn't exist, use mock data or handle error
-            if (error) {
-                console.log('Error fetching pharmacies, using mock data:', error);
-                setPharmacies(MOCK_PHARMACIES);
-            } else {
-                setPharmacies(data || MOCK_PHARMACIES);
-            }
-        } catch (e) {
-            setPharmacies(MOCK_PHARMACIES);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const MOCK_PHARMACIES: Pharmacy[] = [
-        {
-            id: '1',
-            name: 'HealthPlus Pharmacy',
-            address: '123 Main St, New York',
-            rating: 4.8,
-            image_url: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=800&q=80',
-            is_open: true,
-            delivery_fee: 2.99,
-            delivery_time: '20-30 min'
-        },
-        {
-            id: '2',
-            name: 'City Care Chemist',
-            address: '456 Broadway, Brooklyn',
-            rating: 4.5,
-            image_url: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=800&q=80',
-            is_open: true,
-            delivery_fee: 0, // Free delivery
-            delivery_time: '30-45 min'
-        },
-        {
-            id: '3',
-            name: 'MediLife Drugstore',
-            address: '789 Queens Blvd, Queens',
-            rating: 4.2,
-            image_url: 'https://images.unsplash.com/photo-1576602976047-174e57a47881?w=800&q=80',
-            is_open: false,
-            delivery_fee: 5.00,
-            delivery_time: 'Closed'
-        }
-    ];
+    const filteredPharmacies = pharmacies.filter((pharmacy) =>
+        pharmacy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pharmacy.address.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const renderPharmacy = ({ item }: { item: Pharmacy }) => (
         <TouchableOpacity
@@ -140,10 +87,17 @@ export default function PharmaciesScreen() {
             />
 
             <FlatList
-                data={pharmacies}
+                data={filteredPharmacies}
                 renderItem={renderPharmacy}
                 keyExtractor={item => item.id}
                 contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                refreshing={loading}
+                onRefresh={refresh}
+                ListEmptyComponent={() => (
+                    <View className="p-10 items-center">
+                        <Text className="text-gray-400 text-center">No pharmacies found matching your criteria.</Text>
+                    </View>
+                )}
             />
         </View>
     );

@@ -1,101 +1,57 @@
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { theme } from '@/constants/theme';
+import { useJobs } from '@/hooks/useJobs';
+import { Stack } from 'expo-router';
 import { Briefcase, MapPin } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 
-interface Job {
-    id: string;
-    title: string;
-    hospital: string;
-    location: string;
-    type: string;
-    salary: string;
-    postedAt: string;
-}
-
-const MOCK_JOBS: Job[] = [
-    {
-        id: '1',
-        title: 'Senior Cardiologist',
-        hospital: 'St. Mary\'s Hospital',
-        location: 'New York, NY',
-        type: 'Full-time',
-        salary: '$250k - $350k',
-        postedAt: '2 days ago',
-    },
-    {
-        id: '2',
-        title: 'ER Nurse',
-        hospital: 'General City Hospital',
-        location: 'Brooklyn, NY',
-        type: 'Locum',
-        salary: '$60/hr',
-        postedAt: '1 day ago',
-    },
-    {
-        id: '3',
-        title: 'Medical Laboratory Technician',
-        hospital: 'LabCorp',
-        location: 'Queens, NY',
-        type: 'Full-time',
-        salary: '$50k - $70k',
-        postedAt: '3 days ago',
-    },
-    {
-        id: '4',
-        title: 'Pediatrician',
-        hospital: 'Children\'s Health Center',
-        location: 'Manhattan, NY',
-        type: 'Part-time',
-        salary: '$120k - $150k',
-        postedAt: '5 hours ago',
-    },
-];
-
 export default function JobsScreen() {
     const [searchQuery, setSearchQuery] = useState('');
+    const { jobs, loading, refresh } = useJobs();
+    const filteredJobs = jobs.filter(
+        (job) =>
+            job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            job.organization.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-    const renderJobItem = ({ item }: { item: Job }) => (
-        <TouchableOpacity
-            style={{
-                backgroundColor: theme.colors.white,
-                padding: 16,
-                borderRadius: 12,
-                marginBottom: 12,
-                ...theme.shadows.sm
-            }}
-        >
-            <View className="flex-row justify-between items-start mb-2">
-                <View className="flex-1">
-                    <Text className="text-lg font-bold text-gray-900">{item.title}</Text>
-                    <Text className="text-gray-600 font-medium">{item.hospital}</Text>
+    const renderJob = ({ item }: { item: any }) => (
+        <TouchableOpacity className="bg-white mx-5 mb-4 p-4 rounded-xl shadow-sm border border-gray-100 flex-row">
+            <View className="h-12 w-12 bg-blue-50 rounded-lg items-center justify-center mr-4">
+                <Briefcase size={24} color={theme.colors.primary.DEFAULT} />
+            </View>
+            <View className="flex-1">
+                <Text className="text-lg font-bold text-gray-900">{item.title}</Text>
+                <Text className="text-gray-600 font-medium mb-1">{item.organization}</Text>
+
+                <View className="flex-row items-center mb-2">
+                    <MapPin size={14} color={theme.colors.gray[400]} />
+                    <Text className="text-gray-400 text-xs ml-1">{item.location}</Text>
                 </View>
-                <View className="bg-blue-50 px-3 py-1 rounded-full">
-                    <Text className="text-primary text-xs font-semibold">{item.type}</Text>
+
+                <View className="flex-row flex-wrap gap-2">
+                    <View className="bg-gray-100 px-2 py-1 rounded-md">
+                        <Text className="text-xs text-gray-600">{item.type}</Text>
+                    </View>
+                    <View className="bg-green-50 px-2 py-1 rounded-md">
+                        <Text className="text-xs text-green-700">{item.salary_range}</Text>
+                    </View>
                 </View>
             </View>
-
-            <View className="flex-row items-center mb-3">
-                <MapPin size={14} color={theme.colors.gray[500]} />
-                <Text className="text-gray-500 text-sm ml-1 mr-4">{item.location}</Text>
-                <Briefcase size={14} color={theme.colors.gray[500]} />
-                <Text className="text-gray-500 text-sm ml-1">{item.postedAt}</Text>
-            </View>
-
-            <View className="flex-row justify-between items-center border-t border-gray-100 pt-3">
-                <Text className="font-semibold text-gray-900">{item.salary}</Text>
-                <Text className="text-primary font-medium">Apply Now</Text>
+            <View className="justify-center">
+                <Text className="text-blue-500 font-medium">Apply</Text>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View style={{ flex: 1, backgroundColor: theme.colors.gray[50] }}>
+            <Stack.Screen options={{ headerShown: false }} />
             <ScreenHeader
-                title="Career Opportunities"
-                showBack
-                searchPlaceholder="Search jobs, hospitals, roles..."
+                title="Jobs & Shifts"
+                subtitle="Career Opportunities"
+                showBack={true}
+                searchPlaceholder="Search jobs, locums, hospitals..."
                 onSearch={setSearchQuery}
             />
 
@@ -116,12 +72,18 @@ export default function JobsScreen() {
                 />
             </View>
 
-            {/* Job List */}
             <FlatList
-                data={MOCK_JOBS}
-                renderItem={renderJobItem}
+                data={filteredJobs}
+                renderItem={renderJob}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingTop: 10, paddingBottom: 40 }}
+                refreshing={loading}
+                onRefresh={refresh}
+                ListEmptyComponent={() => (
+                    <View className="p-10 items-center">
+                        <Text className="text-gray-400 text-center">No active job listings found.</Text>
+                    </View>
+                )}
             />
         </View>
     );

@@ -1,10 +1,12 @@
 import { Badge, Button } from '@/components/ui';
+import { theme } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 import { storageService } from '@/services/storageService';
 import { useStore } from '@/store/store';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AlertCircle, Check, Upload } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProductDetailsScreen() {
@@ -17,16 +19,43 @@ export default function ProductDetailsScreen() {
     const [prescriptionUrl, setPrescriptionUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
 
-    // Mock product data - in a real app this would fetch based on id
-    const product = {
-        id: id as string,
-        name: 'Benylin 4 Flu Syrup',
-        price: 5.00,
-        image: 'https://via.placeholder.com/300',
-        inStock: true,
-        requiresPrescription: true,
-        description: 'Prescription only compound',
+    const [product, setProduct] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (id) {
+            fetchProduct();
+        }
+    }, [id]);
+
+    const fetchProduct = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            setProduct(data);
+        } catch (error) {
+            console.error('Error fetching product:', error);
+            Alert.alert('Error', 'Product not found');
+            router.back();
+        } finally {
+            setLoading(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <View className="flex-1 bg-white items-center justify-center">
+                <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+            </View>
+        );
+    }
+
+    if (!product) return null;
 
     const pickPrescription = async () => {
         if (!user) {
@@ -97,7 +126,7 @@ export default function ProductDetailsScreen() {
     };
 
     const handleAddToCart = () => {
-        if (product.requiresPrescription && !prescriptionUrl) {
+        if (product.requires_prescription && !prescriptionUrl) {
             Alert.alert('Required', 'Please upload a prescription for this item');
             return;
         }
@@ -108,8 +137,8 @@ export default function ProductDetailsScreen() {
             name: product.name,
             price: product.price,
             quantity: quantity,
-            image: product.image,
-            requiresPrescription: product.requiresPrescription,
+            image: product.image_url,
+            requiresPrescription: product.requires_prescription,
             prescriptionUrl: prescriptionUrl || undefined,
         });
 
@@ -124,7 +153,7 @@ export default function ProductDetailsScreen() {
             <ScrollView className="flex-1">
                 {/* Product Image */}
                 <Image
-                    source={{ uri: product.image }}
+                    source={{ uri: product.image_url || 'https://via.placeholder.com/300' }}
                     className="w-full h-80"
                 />
 
@@ -135,7 +164,7 @@ export default function ProductDetailsScreen() {
                             <Text className="text-2xl font-bold text-gray-800 mb-2">{product.name}</Text>
                             <Text className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</Text>
                         </View>
-                        {product.inStock ? (
+                        {product.stock_quantity > 0 ? (
                             <Badge text="In Stock" variant="success" />
                         ) : (
                             <Badge text="Out of Stock" variant="danger" />
@@ -143,7 +172,7 @@ export default function ProductDetailsScreen() {
                     </View>
 
                     {/* Prescription Warning */}
-                    {product.requiresPrescription && (
+                    {product.requires_prescription && (
                         <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex-row">
                             <AlertCircle size={20} color="#F59E0B" />
                             <View className="ml-3 flex-1">
@@ -154,7 +183,7 @@ export default function ProductDetailsScreen() {
                     )}
 
                     {/* Upload Prescription */}
-                    {product.requiresPrescription && (
+                    {product.requires_prescription && (
                         <View className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                             <View className="flex-row justify-between items-center mb-3">
                                 <Text className="text-gray-700 font-medium">Upload Prescription</Text>
@@ -224,7 +253,7 @@ export default function ProductDetailsScreen() {
                 <Button
                     title="Add to Cart"
                     onPress={handleAddToCart}
-                    disabled={!product.inStock || (product.requiresPrescription && !prescriptionUrl)}
+                    disabled={product.stock_quantity === 0 || (product.requires_prescription && !prescriptionUrl)}
                 />
             </View>
         </View>

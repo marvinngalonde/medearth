@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui';
 import { Notification, notificationsService } from '@/services/notificationsService';
 import { useStore } from '@/store/store';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft, Bell, Calendar, Check, Package, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from 'react-native';
@@ -129,6 +129,7 @@ export default function NotificationsScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
+            <Stack.Screen options={{ headerShown: false }} />
             {/* Header */}
             <View className="bg-primary pt-12 pb-6 px-6 shadow-md">
                 <View className="flex-row justify-between items-center mb-1">

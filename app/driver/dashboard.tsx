@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft, MapPin } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
@@ -25,6 +25,7 @@ export default function DriverDashboardScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
+            <Stack.Screen options={{ headerShown: false }} />
             {/* Header */}
             <View className="bg-primary pt-12 pb-6 px-6">
                 <View className="flex-row items-center justify-between mb-4">

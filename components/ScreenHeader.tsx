@@ -56,7 +56,7 @@ export function ScreenHeader({
 
             {/* Optional Search Bar */}
             {searchPlaceholder && (
-                <View className="flex-row items-center bg-white rounded-2xl px-4 h-9 shadow-sm">
+                <View className="flex-row items-center bg-white rounded-2xl px-4 h-11 shadow-sm">
                     <Search size={20} color={theme.colors.gray[400]} />
                     <TextInput
                         className="flex-1 ml-2 text-base text-gray-900"
