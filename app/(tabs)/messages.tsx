@@ -12,6 +12,7 @@ export default function MessagesScreen() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dbError, setDbError] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -25,8 +26,13 @@ export default function MessagesScreen() {
         try {
             const data = await messagingService.getConversations(user.id);
             setConversations(data || []);
-        } catch (error) {
-            console.error('Error fetching conversations:', error);
+        } catch (error: any) {
+            if (error?.code === '42P17') {
+                console.warn('RLS Recursion Error: Displaying fallback UI');
+                setDbError(true);
+            } else {
+                console.error('Error fetching conversations:', error);
+            }
         } finally {
             setLoading(false);
         }
@@ -81,6 +87,33 @@ export default function MessagesScreen() {
         return (
             <View className="flex-1 bg-gray-50 items-center justify-center">
                 <ActivityIndicator size="large" color="#1E3A8A" />
+            </View>
+        );
+    }
+
+    if (dbError) {
+        return (
+            <View className="flex-1 bg-white">
+                <ScreenHeader
+                    title="Messages"
+                    searchPlaceholder="Search conversations..."
+                    onSearch={setSearchQuery}
+                />
+                <View className="flex-1 items-center justify-center px-6">
+                    <MessageCircle size={48} color="#EF4444" />
+                    <Text className="text-danger text-lg font-bold mt-4 text-center">Connection Issue</Text>
+                    <Text className="text-gray-500 mt-2 text-center px-4">
+                        We encountered a security policy error (RLS Recursion).
+                        {'\n\n'}
+                        Please run the "Emergency Fix" SQL script to resolve this immediately.
+                    </Text>
+                    <TouchableOpacity
+                        onPress={fetchConversations}
+                        className="mt-6 bg-primary px-6 py-3 rounded-full"
+                    >
+                        <Text className="text-white font-semibold">Retry</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }

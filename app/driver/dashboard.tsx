@@ -1,115 +1,118 @@
-import { Card } from '@/components/ui';
+import { ActiveDeliveryMap } from '@/components/driver/ActiveDeliveryMap';
+import { DriverStatusCard } from '@/components/driver/DriverStatusCard';
+import { JobRequestModal } from '@/components/driver/JobRequestModal';
+import { useDriverState } from '@/hooks/useDriverState';
 import { Stack, useRouter } from 'expo-router';
-import { ArrowLeft, MapPin } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
-
-interface Job {
-    id: string;
-    type: string;
-    distance: string;
-    earnings: number;
-    status: 'available' | 'accepted';
-}
+import { ArrowLeft, History, Map, Truck } from 'lucide-react-native';
+import React from 'react';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function DriverDashboardScreen() {
     const router = useRouter();
-    const [isOnline, setIsOnline] = useState(false);
-
-    const jobs: Job[] = [
-        { id: '1', type: 'Delivery', distance: '471 km', earnings: 10.00, status: 'available' },
-        { id: '2', type: 'Delivery', distance: '241 km', earnings: 10.00, status: 'available' },
-        { id: '3', type: 'Delivery', distance: '471 km', earnings: 10.00, status: 'available' },
-        { id: '4', type: 'Pickup', distance: '241 km', earnings: 10.00, status: 'accepted' },
-    ];
+    const {
+        isOnline,
+        toggleOnline,
+        activeJob,
+        incomingJob,
+        acceptJob,
+        declineJob,
+        completeJob,
+        stats
+    } = useDriverState();
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-gray-900">
             <Stack.Screen options={{ headerShown: false }} />
+
             {/* Header */}
-            <View className="bg-primary pt-12 pb-6 px-6">
-                <View className="flex-row items-center justify-between mb-4">
-                    <View className="flex-row items-center flex-1">
-                        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-                            <ArrowLeft size={24} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <Text className="text-white text-2xl font-bold">Driver Dashboard</Text>
+            <View className="bg-gray-800 pt-12 pb-6 px-6 z-10 border-b border-gray-700">
+                <View className="flex-row items-center mb-1">
+                    <TouchableOpacity onPress={() => router.back()} className="mr-4">
+                        <ArrowLeft size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <Text className="text-white text-2xl font-bold flex-1">Logistics Hub</Text>
+                    <View className="bg-blue-500 px-3 py-1 rounded-full">
+                        <Text className="text-white font-bold text-xs uppercase">Driver</Text>
                     </View>
                 </View>
-
-                {/* Online Toggle */}
-                <Card className="bg-white/10 flex-row items-center justify-between p-4">
-                    <Text className="text-white text-lg font-semibold">GO ONLINE</Text>
-                    <Switch
-                        value={isOnline}
-                        onValueChange={setIsOnline}
-                        trackColor={{ false: '#FFFFFF40', true: '#10B981' }}
-                        thumbColor={isOnline ? '#FFFFFF' : '#F3F4F6'}
-                    />
-                </Card>
             </View>
 
-            {/* Job Feed */}
             <ScrollView className="flex-1 px-6 pt-6">
-                <Text className="text-xl font-bold text-gray-800 mb-4">Job Feed</Text>
+                {/* 1. Status Card */}
+                <DriverStatusCard
+                    isOnline={isOnline}
+                    onToggle={toggleOnline}
+                    stats={stats}
+                />
 
-                {!isOnline && (
-                    <Card className="items-center py-8 mb-4 bg-orange-50">
-                        <Text className="text-orange-600 font-semibold mb-2">You're Offline</Text>
-                        <Text className="text-gray-600 text-center">
-                            Turn on "GO ONLINE" to start receiving job requests
-                        </Text>
-                    </Card>
-                )}
+                {/* 2. Main Content Area */}
+                {isOnline ? (
+                    <View>
+                        {activeJob ? (
+                            <View>
+                                <Text className="text-gray-400 font-bold mb-3 uppercase tracking-wider">Current Delivery</Text>
+                                <ActiveDeliveryMap />
 
-                {jobs.map((job) => (
-                    <TouchableOpacity
-                        key={job.id}
-                        onPress={() => router.push(`/driver/job-details?jobId=${job.id}` as any)}
-                        className="mb-3"
-                    >
-                        <Card className="p-4">
-                            <View className="flex-row items-center justify-between mb-3">
-                                <View className="flex-1">
-                                    <View className="flex-row items-center mb-2">
-                                        <MapPin size={16} color="#6B7280" />
-                                        <Text className="ml-2 text-gray-700 font-medium">{job.type}</Text>
+                                <View className="bg-gray-800 p-4 rounded-xl mb-6">
+                                    <View className="flex-row justify-between mb-2">
+                                        <Text className="text-gray-400">Destination</Text>
+                                        <Text className="text-white font-bold">{activeJob.distance}</Text>
                                     </View>
-                                    <Text className="text-gray-500 text-sm">{job.distance}</Text>
-                                </View>
-                                <View className="items-end">
-                                    <View className="flex-row items-center">
-                                        <Text className="text-2xl font-bold text-primary mr-1">
-                                            ${job.earnings.toFixed(2)}
-                                        </Text>
-                                    </View>
-                                    <Text className="text-gray-500 text-xs">Earning</Text>
+                                    <Text className="text-white text-lg font-semibold mb-4">{activeJob.deliveryAddress}</Text>
+
+                                    <TouchableOpacity
+                                        onPress={completeJob}
+                                        className="bg-green-500 py-3 rounded-lg items-center"
+                                    >
+                                        <Text className="text-white font-bold">Complete Delivery</Text>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
-
-                            {job.status === 'available' ? (
-                                <TouchableOpacity
-                                    className={`py-3 rounded-lg ${isOnline ? 'bg-secondary' : 'bg-gray-300'}`}
-                                    disabled={!isOnline}
-                                >
-                                    <Text className="text-white text-center font-semibold">
-                                        {isOnline ? 'Start to Accept' : 'Go Online to Accept'}
-                                    </Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <View className="flex-row">
-                                    <TouchableOpacity className="flex-1 mr-2 bg-primary py-3 rounded-lg">
-                                        <Text className="text-white text-center font-semibold">View Details</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity className="flex-1 ml-2 bg-danger py-3 rounded-lg">
-                                        <Text className="text-white text-center font-semibold">Cancel</Text>
-                                    </TouchableOpacity>
+                        ) : (
+                            <View className="items-center justify-center py-10 bg-gray-800/50 rounded-3xl border-2 border-dashed border-gray-700">
+                                <View className="w-20 h-20 bg-blue-500/20 rounded-full items-center justify-center mb-4 animate-pulse">
+                                    <Map size={32} color="#3B82F6" />
                                 </View>
-                            )}
-                        </Card>
-                    </TouchableOpacity>
-                ))}
+                                <Text className="text-white text-xl font-bold">Finding Orders...</Text>
+                                <Text className="text-gray-400 mt-2 text-center px-8">Stay in high demand areas for better matches.</Text>
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View>
+                        <Text className="text-gray-400 font-bold mb-3 uppercase tracking-wider">Recent Activity</Text>
+                        <View className="bg-gray-800 rounded-xl p-4 mb-4">
+                            <View className="flex-row items-center justify-between mb-4 border-b border-gray-700 pb-4">
+                                <View className="flex-row items-center">
+                                    <History size={20} color="#9CA3AF" />
+                                    <Text className="text-gray-300 ml-3 font-medium">Last Session</Text>
+                                </View>
+                                <Text className="text-white font-bold">Yesterday</Text>
+                            </View>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <Truck size={20} color="#9CA3AF" />
+                                    <Text className="text-gray-300 ml-3 font-medium">Total Deliveries</Text>
+                                </View>
+                                <Text className="text-white font-bold">12</Text>
+                            </View>
+                        </View>
+
+                        <View className="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
+                            <Text className="text-blue-400 font-bold mb-1">Pro Tip</Text>
+                            <Text className="text-blue-200 text-sm">Peak hours start at 5 PM. Go online then to earn 1.5x more.</Text>
+                        </View>
+                    </View>
+                )}
             </ScrollView>
+
+            {/* Incoming Job Modal */}
+            <JobRequestModal
+                visible={!!incomingJob}
+                job={incomingJob}
+                onAccept={acceptJob}
+                onDecline={declineJob}
+            />
         </View>
     );
 }
