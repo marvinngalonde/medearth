@@ -4,7 +4,7 @@ import { useStore } from '@/store/store';
 import { useRouter } from 'expo-router';
 import { Lock, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -14,6 +14,7 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
+        console.log('LoginScreen: Attempting login with email:', email);
         if (!email || !password) {
             Alert.alert('Error', 'Please enter email and password');
             return;
@@ -21,22 +22,35 @@ export default function LoginScreen() {
 
         setLoading(true);
         try {
+            console.log('LoginScreen: Calling signInWithPassword...');
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password: password,
             });
 
-            if (error) throw error;
+            console.log('LoginScreen: signInWithPassword result', { data, error });
+
+            if (error) {
+                console.error('LoginScreen: signInWithPassword ERROR:', error);
+                throw error;
+            }
 
             if (data.user) {
+                console.log('LoginScreen: Login successful, user ID:', data.user.id);
                 // Fetch user profile
+                console.log('LoginScreen: Fetching user profile...');
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', data.user.id)
                     .single();
 
-                if (profileError) throw profileError;
+                if (profileError) {
+                    console.error('LoginScreen: Profile fetch ERROR:', profileError);
+                    throw profileError;
+                }
+
+                console.log('LoginScreen: Profile fetched', profile);
 
                 if (profile) {
                     setUser({
@@ -53,6 +67,7 @@ export default function LoginScreen() {
                 router.replace('/(tabs)');
             }
         } catch (error: any) {
+            console.error('LoginScreen: CATCH ERROR:', error);
             Alert.alert('Login Failed', error.message);
         } finally {
             setLoading(false);
@@ -62,9 +77,17 @@ export default function LoginScreen() {
     return (
         <View className="flex-1 bg-white">
             <View className="flex-1 justify-center px-6">
+                <View className="items-center mb-10">
+                    <Image
+                        source={require('@/assets/images/home-icon.png')}
+                        className="w-64 h-24"
+                        resizeMode="contain"
+                    />
+                </View>
+
                 <View className="mb-8">
                     <Text className="text-4xl font-bold text-primary mb-2">Welcome Back</Text>
-                    <Text className="text-gray-600">Sign in to continue to MedLink</Text>
+                    <Text className="text-gray-600">Sign in to continue to TreatSync</Text>
                 </View>
 
                 <View className="mb-6">

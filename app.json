@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "medlink",
-    "slug": "medlink",
+    "name": "TreatSync",
+    "slug": "TreatSync",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "medlink",
+    "scheme": "TreatSync",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

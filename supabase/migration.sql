@@ -1,5 +1,5 @@
 -- =====================================================
--- MedLink Database Migration
+-- TreatSync Database Migration
 -- Complete SQL Script for Supabase
 -- =====================================================
 

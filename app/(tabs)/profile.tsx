@@ -1,7 +1,8 @@
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card } from '@/components/ui';
 import { UserRole, useStore } from '@/store/store';
 import { useRouter } from 'expo-router';
-import { Building2, ChevronRight, LogOut, Truck, User } from 'lucide-react-native';
+import { Building2, ChevronRight, LogOut, Settings, Truck, User } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -23,9 +24,9 @@ export default function ProfileScreen() {
 
         // Navigate to appropriate dashboard
         if (role === 'pharmacy') {
-            router.push('/pharmacy/dashboard');
+            router.push('/pharmacy/dashboard' as any);
         } else if (role === 'driver') {
-            router.push('/driver/dashboard');
+            router.push('/driver/dashboard' as any);
         }
     };
 
@@ -36,37 +37,17 @@ export default function ProfileScreen() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Header */}
-            <View className="bg-primary pt-12 pb-8 px-6 rounded-b-3xl">
-                <Text className="text-white text-2xl font-bold">MedLink</Text>
-            </View>
-
-            <ScrollView className="flex-1 px-6 pt-6">
-                {/* Menu Items */}
-                <View className="mb-6">
-                    <TouchableOpacity
-                        onPress={() => router.push('/order-history' as any)}
-                        className="mb-3"
-                    >
-                        <Card className="flex-row items-center justify-between p-4">
-                            <Text className="text-gray-800 font-medium">Order History</Text>
-                            <Text className="text-gray-400">›</Text>
-                        </Card>
+            <ScreenHeader
+                title="Profile"
+                rightAction={
+                    <TouchableOpacity onPress={() => router.push('/profile-settings' as any)}>
+                        <Settings size={24} color="#1F2937" />
                     </TouchableOpacity>
+                }
+            />
 
-                    <TouchableOpacity
-                        onPress={() => router.push('/profile-settings' as any)}
-                        className="mb-3"
-                    >
-                        <Card className="flex-row items-center justify-between p-4">
-                            <Text className="text-gray-800 font-medium">Settings</Text>
-                            <Text className="text-gray-400">›</Text>
-                        </Card>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Switch Profile Section */}
-                {/* User Profile */}
+            <ScrollView className="flex-1 px-4 pt-6">
+                {/* User Profile Card */}
                 <Card className="items-center py-6 mb-6">
                     <View className="w-24 h-24 bg-primary rounded-full items-center justify-center mb-3">
                         <Text className="text-white text-3xl font-bold">
@@ -77,10 +58,39 @@ export default function ProfileScreen() {
                         {user?.firstName} {user?.lastName}
                     </Text>
                     <Text className="text-gray-500 mt-1">{user?.phone}</Text>
+                    <View className="flex-row mt-3">
+                        <View className="bg-blue-50 px-3 py-1 rounded-full">
+                            <Text className="text-primary text-xs font-bold uppercase">{currentRole}</Text>
+                        </View>
+                    </View>
                 </Card>
 
+                {/* Menu Items */}
+                <View className="mb-6">
+                    <Text className="text-lg font-bold text-gray-800 mb-3 px-1">Menu</Text>
+                    <TouchableOpacity
+                        onPress={() => router.push('/order-history' as any)}
+                        className="mb-3"
+                    >
+                        <Card className="flex-row items-center justify-between p-4">
+                            <Text className="text-gray-800 font-medium">Order History</Text>
+                            <ChevronRight size={20} color="#9CA3AF" />
+                        </Card>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => router.push('/profile-settings' as any)}
+                        className="mb-3"
+                    >
+                        <Card className="flex-row items-center justify-between p-4">
+                            <Text className="text-gray-800 font-medium">Settings</Text>
+                            <ChevronRight size={20} color="#9CA3AF" />
+                        </Card>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Role Switcher */}
-                <Text className="text-lg font-bold text-gray-800 mb-4">Switch Profile</Text>
+                <Text className="text-lg font-bold text-gray-800 mb-3 px-1">Switch Profile</Text>
 
                 {roles.map((role) => (
                     <TouchableOpacity
@@ -103,7 +113,7 @@ export default function ProfileScreen() {
                                     <Text className="text-gray-500 text-sm">{role.description}</Text>
                                 </View>
                             </View>
-                            <ChevronRight size={20} color="#6B7280" />
+                            <ChevronRight size={20} color={currentRole === role.id ? '#1E40AF' : '#6B7280'} />
                         </Card>
                     </TouchableOpacity>
                 ))}
@@ -111,9 +121,9 @@ export default function ProfileScreen() {
                 {/* Logout Button */}
                 <TouchableOpacity
                     onPress={handleLogout}
-                    className="mt-6 mb-8"
+                    className="mt-4 mb-20"
                 >
-                    <Card className="flex-row items-center justify-center p-4 bg-red-50">
+                    <Card className="flex-row items-center justify-center p-4 bg-red-50 border border-red-100">
                         <LogOut size={20} color="#EF4444" />
                         <Text className="ml-2 text-danger font-semibold">Logout</Text>
                     </Card>

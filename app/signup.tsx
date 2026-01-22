@@ -103,7 +103,7 @@ export default function SignupScreen() {
                         <Text className="text-white text-3xl font-bold">M</Text>
                     </View>
                     <Text className="text-2xl font-bold text-primary">Create Account</Text>
-                    <Text className="text-gray-500 mt-1">Join MedLink today</Text>
+                    <Text className="text-gray-500 mt-1">Join TreatSync today</Text>
                 </View>
 
                 <View className="mb-6">

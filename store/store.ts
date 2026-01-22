@@ -10,6 +10,7 @@ interface User {
     email?: string;
     avatarUrl?: string;
     roles: UserRole[];
+    activeRole: UserRole;
 }
 
 interface CartItem {

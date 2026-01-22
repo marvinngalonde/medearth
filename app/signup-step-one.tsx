@@ -2,7 +2,7 @@ import { Button, Input } from '@/components/ui';
 import { useRouter } from 'expo-router';
 import { Mail, Phone, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SignupStepOneScreen() {
     const router = useRouter();
@@ -34,6 +34,14 @@ export default function SignupStepOneScreen() {
     return (
         <View className="flex-1 bg-white">
             <View className="flex-1 justify-center px-6">
+                <View className="items-center mb-10">
+                    <Image
+                        source={require('@/assets/images/home-icon.png')}
+                        className="w-64 h-24"
+                        resizeMode="contain"
+                    />
+                </View>
+
                 <View className="mb-8">
                     <Text className="text-4xl font-bold text-primary mb-2">Create Account</Text>
                     <Text className="text-gray-600">Step 1 of 2 - Basic Information</Text>

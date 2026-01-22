@@ -1,4 +1,4 @@
-// Theme Configuration for MedLink App
+// Theme Configuration for TreatSync App
 export const theme = {
   colors: {
     // Primary Colors

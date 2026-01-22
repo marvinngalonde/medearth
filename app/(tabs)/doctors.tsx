@@ -1,112 +1,118 @@
-import { Badge, Card } from '@/components/ui';
-import { supabase } from '@/lib/supabase';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { theme } from '@/constants/theme';
 import { useRouter } from 'expo-router';
-import { Search, Star } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { MapPin, Star } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
-interface Doctor {
-    id: string;
-    name: string;
-    specialty: string;
-    consultation_fee: number;
-    rating: number;
-    total_reviews: number;
-    is_available: boolean;
-    image_url?: string;
-}
+const DOCTORS = [
+    {
+        id: '1',
+        name: 'Dr. Sarah Wilson',
+        specialty: 'Cardiologist',
+        hospital: 'St. Mary\'s Hospital',
+        rating: 4.8,
+        reviews: 124,
+        fee: '$80',
+        image: 'https://randomuser.me/api/portraits/women/44.jpg',
+        availability: 'Available Today',
+    },
+    {
+        id: '2',
+        name: 'Dr. James Chen',
+        specialty: 'Pediatrician',
+        hospital: 'City Children\'s Center',
+        rating: 4.9,
+        reviews: 89,
+        fee: '$60',
+        image: 'https://randomuser.me/api/portraits/men/32.jpg',
+        availability: 'Next Available: Tomorrow',
+    },
+    {
+        id: '3',
+        name: 'Dr. Emily Brooks',
+        specialty: 'Dermatologist',
+        hospital: 'Skin Care Clinic',
+        rating: 4.7,
+        reviews: 210,
+        fee: '$90',
+        image: 'https://randomuser.me/api/portraits/women/68.jpg',
+        availability: 'Available Today',
+    },
+    {
+        id: '4',
+        name: 'Dr. Michael Ross',
+        specialty: 'General Practitioner',
+        hospital: 'Downtown Medical',
+        rating: 4.6,
+        reviews: 156,
+        fee: '$50',
+        image: 'https://randomuser.me/api/portraits/men/85.jpg',
+        availability: 'Available in 1 hr',
+    },
+];
 
 export default function DoctorsScreen() {
     const router = useRouter();
-    const [doctors, setDoctors] = useState<Doctor[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        fetchDoctors();
-    }, []);
+    const renderDoctor = ({ item }: { item: typeof DOCTORS[0] }) => (
+        <TouchableOpacity
+            className="bg-white p-4 mb-4 rounded-2xl shadow-sm border border-gray-100"
+            onPress={() => router.push(`/doctor/${item.id}`)}
+            style={theme.shadows.sm}
+        >
+            <View className="flex-row">
+                <Image
+                    source={{ uri: item.image }}
+                    className="w-20 h-20 rounded-xl bg-gray-200"
+                />
+                <View className="flex-1 ml-4 justify-between">
+                    <View>
+                        <View className="flex-row justify-between items-start">
+                            <Text className="text-lg font-bold text-gray-900 flex-1 mr-2">{item.name}</Text>
+                            <View className="flex-row items-center bg-yellow-50 px-2 py-0.5 rounded-md">
+                                <Star size={12} color={theme.colors.accent.DEFAULT} fill={theme.colors.accent.DEFAULT} />
+                                <Text className="ml-1 text-xs font-bold text-yellow-700">{item.rating}</Text>
+                            </View>
+                        </View>
+                        <Text className="text-primary font-medium text-sm">{item.specialty}</Text>
+                    </View>
 
-    const fetchDoctors = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('doctors')
-                .select('*')
-                .order('rating', { ascending: false });
-
-            if (error) throw error;
-            setDoctors(data || []);
-        } catch (error) {
-            console.error('Error fetching doctors:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <View className="flex-1 bg-gray-50 items-center justify-center">
-                <ActivityIndicator size="large" color="#1E3A8A" />
-            </View>
-        );
-    }
-
-    return (
-        <View className="flex-1 bg-gray-50">
-            {/* Header */}
-            <View className="bg-primary pt-12 pb-6 px-6">
-                <Text className="text-white text-2xl font-bold mb-4">Doctors</Text>
-
-                {/* Search Bar */}
-                <View className="bg-white rounded-full px-4 py-3 flex-row items-center">
-                    <Search size={20} color="#6B7280" />
-                    <Text className="ml-2 text-gray-400">Search doctors...</Text>
+                    <View className="flex-row items-center mt-1">
+                        <MapPin size={12} color={theme.colors.gray[500]} />
+                        <Text className="text-gray-500 text-xs ml-1 flex-1" numberOfLines={1}>{item.hospital}</Text>
+                    </View>
                 </View>
             </View>
 
-            <ScrollView className="flex-1 px-6 pt-6">
-                {doctors.length === 0 ? (
-                    <View className="items-center py-12">
-                        <Text className="text-gray-500 text-lg">No doctors found</Text>
-                    </View>
-                ) : (
-                    <View className="flex-row flex-wrap justify-between">
-                        {doctors.map((doctor) => (
-                            <TouchableOpacity
-                                key={doctor.id}
-                                className="w-[48%] mb-4"
-                                onPress={() => router.push(`/doctor/${doctor.id}`)}
-                            >
-                                <Card className="p-3 items-center">
-                                    <View className="w-20 h-20 rounded-full bg-gray-200 mb-3 overflow-hidden">
-                                        <Image
-                                            source={{ uri: doctor.image_url || 'https://via.placeholder.com/100' }}
-                                            className="w-full h-full"
-                                        />
-                                    </View>
-                                    <Text className="font-bold text-gray-800 text-center mb-1" numberOfLines={1}>
-                                        {doctor.name}
-                                    </Text>
-                                    <Text className="text-primary text-xs font-semibold mb-2">
-                                        {doctor.specialty}
-                                    </Text>
-                                    <View className="flex-row items-center justify-between w-full">
-                                        <Text className="text-gray-600 font-bold">${doctor.consultation_fee}</Text>
-                                        <View className="flex-row items-center">
-                                            <Star size={12} color="#F59E0B" fill="#F59E0B" />
-                                            <Text className="text-xs text-gray-500 ml-1">{doctor.rating}</Text>
-                                        </View>
-                                    </View>
-                                    {doctor.is_available ? (
-                                        <Badge text="Available" variant="success" className="mt-2" />
-                                    ) : (
-                                        <Badge text="Unavailable" variant="secondary" className="mt-2" />
-                                    )}
-                                </Card>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
-                <View className="h-20" />
-            </ScrollView>
+            <View className="flex-row justify-between items-center mt-4 pt-3 border-t border-gray-50">
+                <View>
+                    <Text className="text-xs text-green-600 font-medium">{item.availability}</Text>
+                    <Text className="text-sm font-bold text-gray-900 mt-0.5">{item.fee} <Text className="text-gray-400 font-normal">/ visit</Text></Text>
+                </View>
+                <View className="bg-primary px-4 py-2 rounded-lg">
+                    <Text className="text-white font-semibold text-sm">Book Now</Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
+    return (
+        <View className="flex-1 bg-gray-50">
+            <ScreenHeader
+                title="Find a Doctor"
+                subtitle="Specialist Directory"
+                searchPlaceholder="Search doctors, specialties..."
+                onSearch={setSearchQuery}
+            />
+
+            <FlatList
+                data={DOCTORS}
+                renderItem={renderDoctor}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            />
         </View>
     );
 }

@@ -12,6 +12,7 @@ interface InputProps {
     keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
     icon?: React.ReactNode;
     className?: string;
+    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -24,6 +25,7 @@ export const Input: React.FC<InputProps> = ({
     keyboardType = 'default',
     icon,
     className = '',
+    autoCapitalize = 'sentences',
 }) => {
     const [showPassword, setShowPassword] = useState(false);
 
@@ -40,6 +42,7 @@ export const Input: React.FC<InputProps> = ({
                     keyboardType={keyboardType}
                     className="flex-1 text-base"
                     placeholderTextColor="#9CA3AF"
+                    autoCapitalize={autoCapitalize}
                 />
                 {secureTextEntry && (
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
